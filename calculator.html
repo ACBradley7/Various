@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calculator</title>
+    
+</head>
+<body>
+    <script>
+        
+    function calculate(a, b, operation) {
+        // Calculate value
+        let answer;
+        if (operation === "add") {
+            answer = parseFloat(a)+parseFloat(b);
+        } else if (operation === "subtract") {
+            answer = parseFloat(a)-parseFloat(b);
+        } else if (operation === "multiply") {
+            answer = parseFloat(a)*parseFloat(b);
+        } else if (operation === "divide") {
+            answer = parseFloat(a)/parseFloat(b);
+        }
+        
+        // Remove previous answer
+        let parent = document.getElementById("answerBox");
+        let child = document.getElementById("calculatedValue");
+        if (parent.contains(child)) {
+            child.remove();
+        }
+        
+        
+        // Append answer to page
+        answer = document.createTextNode(answer);
+        
+        let pWrapper = document.createElement("p");
+        pWrapper.setAttribute("id", "calculatedValue"); 
+        pWrapper.appendChild(answer);
+        
+        let showAnswer = document.getElementById("answerBox");
+        showAnswer.append(pWrapper);
+    }    
+        
+    </script>
+    
+    <p>Welcome to the calculator! Please enter what you would like to be calculated... </p>
+    <fieldset>
+    <label for="numberA">Number a:</label>
+    <input type="number" id="numberA" name="numberA"><br><br>
+    <label for="numberB">Number b:</label>
+    <input type="number" id="numberB" name="numberB"><br><br>
+    <button onclick="calculate(document.getElementById('numberA').value, document.getElementById('numberB').value, 'add')">a + b</button>
+    <button onclick="calculate(document.getElementById('numberA').value, document.getElementById('numberB').value, 'subtract')">a - b</button>
+    <button onclick="calculate(document.getElementById('numberA').value, document.getElementById('numberB').value, 'multiply')">a * b</button>
+    <button onclick="calculate(document.getElementById('numberA').value, document.getElementById('numberB').value, 'divide')">a / b</button>
+        
+    <div id="answerBox"></div>
+    </fieldset>
+    
+    
+</body>
+
+</html>
