@@ -1,13 +1,17 @@
 /* eslint-env es6 */
 /* eslint-disable */
 
+// Re-do platform creation
+// Re-do jump function
+
+var canvas = null;
 var currentScreen = 0;
 var totalScreens = 1;
 var Hero;
 var Gun;
 var BluePortalBullet;
 var YellowPortalBullet;
-var typedFlag = 0;
+var bulletsArr = [];
 var theta = 0;
 var jumpTime = 0;
 var initializeJump = false;
@@ -15,13 +19,12 @@ var gravityVal = 6;
 var onPlatform = false;
 var jumping = false;
 var platsByScr = [];
-var platsByScrDiem = [];
 var creatures = [];
 var platsMap = new Map();
 var creaturesMap = new Map();
 
 function setup() {
-    var canvas = createCanvas(1400,600);
+    canvas = createCanvas(1400,600);
     Hero = new hero();
     Gun = new gun(Hero);
     setPlatformData();
@@ -32,6 +35,7 @@ function setup() {
 
 function draw() {
     background(150,150,150);
+    whichScreen();
     displayPlatforms();
     bulletsLogic();
     movementLogic(Hero,currentScreen);
@@ -39,12 +43,23 @@ function draw() {
     Hero.display();
 }
 
+const BulletType = {
+    BLUE: "BLUE",
+    YELLOW: "YELLOW"
+}
+
+const EntityType = {
+    HERO: "HERO"
+}
+
 class hero {
     constructor() {
         this.x=400;
         this.y=500;
         this.diameter=30;
+        this.radius = this.diameter / 2;
         this.speed=8;
+        this.entType = EntityType.HERO;
     }
     
     display() {
@@ -55,7 +70,6 @@ class hero {
     jump() {
         let spacebar=32;
         
-        console.log(keyCode);
         if ((keyCode == spacebar) && (initializeJump == false) && (typedFlag == 0)) {
             keyCode = null;
             initializeJump = true;
@@ -185,25 +199,30 @@ class gun {
 }
 
 class bullet {
-    constructor(obj) {
+    constructor(obj, type) {
         this.x=obj.x;
         this.y=obj.y;
-        this.diameter=8;
+        this.diameter=12;
+        this.radius = this.diameter / 2;
         this.speed=18;
+        this.casterType=obj.entType
+        this.type=type;
+
+        bulletsArr.push(this)
     }
     
-    display(color) {
+    display() {
         push();
-        if (color=="blue") {
+        if (this.type==BulletType.BLUE) {
             fill(70,250,205);
-        } else if (color=="yellow") {
+        } else if (this.type==BulletType.YELLOW) {
             fill(255,225,100);
         }
         circle(this.x,this.y,this.diameter);
         pop();
     }
     
-    shot(obj) {
+    shot() {
         let p2X=mouseX;
         let p2Y=mouseY;
         
@@ -224,34 +243,29 @@ class bullet {
 function bulletsLogic() {
     key=key.toUpperCase();
 
-    if (key=="C") {
-        key="";
-        if (typedFlag == 0) {
-            BluePortalBullet = new bullet(Hero);
-            BluePortalBullet.shot(Gun);
-            typedFlag=1;
-        } else if (typedFlag == 1) {
-            typedFlag = 0;
-        }
-    } else if (key=="V") {
-        key="";
-        if (typedFlag == 0) {
-            YellowPortalBullet = new bullet(Hero);
-            YellowPortalBullet.shot(Gun);
-            typedFlag = 1;
-        } else if (typedFlag == 1) {
-            typedFlag = 0;
-        }
+    if (key=="C" && keyIsPressed) {
+        BluePortalBullet = new bullet(Hero, BulletType.BLUE);
+        BluePortalBullet.shot();
+    } else if (key=="V" && keyIsPressed) {
+        YellowPortalBullet = new bullet(Hero, BulletType.YELLOW);
+        YellowPortalBullet.shot();
     }
-    
-    if (BluePortalBullet) {
-        BluePortalBullet.move();
-        BluePortalBullet.display("blue");
-    }
-    
-    if (YellowPortalBullet) {
-        YellowPortalBullet.move();
-        YellowPortalBullet.display("yellow");
+
+    // Remove key = "" for a cool effect
+    key = ""
+
+    if (bulletsArr != null) {
+        for (i = 0; i < bulletsArr.length; i++) {
+            bulletsArr[i].move();
+            bulletsArr[i].display();
+            
+
+            if (bulletsArr[i].x - bulletsArr[i].radius < 0 || bulletsArr[i].x + bulletsArr[i].radius > canvas.width) {
+                bulletsArr.splice(i, 1);
+            } else if (bulletsArr[i].y - bulletsArr[i].radius < 0 || bulletsArr[i].y + bulletsArr[i].radius > canvas.height) {
+                bulletsArr.splice(i, 1);
+            }
+        }
     }
 }
 
@@ -305,6 +319,15 @@ function setPlatformData() {
         setPlatform(1,6,1250,400,80,10);
     
     // Screen 2
+
+        // Platform 1
+        setPlatform(2,1,0,500,width,25);
+
+        // Platform 2
+        setPlatform(2,2,250,250,30,30);
+
+        // Platform 3
+        setPlatform(2,3,500,400,80,50);        
 }
 
 function createPlatforms() {
@@ -313,22 +336,33 @@ function createPlatforms() {
         
         for (let i=0;i < platsMap.size/4; i++) {
             platsByScr[s].push(new platform(s+1,i+1));
-            platsByScrDiem[s] = i;
         }
     }
 }
 
 function displayPlatforms() {
-    for (let s=0;s < totalScreens;s++) {
-        for (let i=0;i < platsByScr[s].length;i++) {
-            push();
-            noStroke();
-            fill(50,50,50);
-            platsByScr[s][i].display();
-            pop();
-        }
+    s = currentScreen;
+
+    for (let i=0;i < platsByScr[s].length;i++) {
+        push();
+        noStroke();
+        fill(50,50,50);
+        platsByScr[s][i].display();
+        pop();
     }
-    
+}
+
+function whichScreen() {
+    if (Hero.x - Hero.radius < 100) {
+        console.log(platsMap);
+        currentScreen = 0
+    } else if (Hero.x + Hero.radius > canvas.width) {
+        currentScreen = 1
+    } else if (Hero.y - Hero.radius < 0) {
+        
+    } else if (Hero.y + Hero.radius > canvas.height) {
+        
+    }
 }
 
 function movementLogic(entity,scrNum) {
@@ -357,7 +391,7 @@ function gravity(entity) {
 }
 
 function stoppedByPlatform(entity,scrNum) {
-    for (let i=0;i<=5;i++) {//i<=platsByScrDiem[scrNum];i++) {
+    for (let i=0;i<=5;i++) {
         let platform=platsByScr[scrNum][i];
         
         // Directional Conditions
