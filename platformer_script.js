@@ -109,19 +109,17 @@ class Hero {
     }
     
     move() {
-        let s = 83;
-        let a = 65;
-        let d = 68;
+        let s = 83, a = 65, d = 68;
 
-        if (keyIsDown(s)) {
+        if (keyIsDown(s) || keyIsDown(DOWN_ARROW)) {
              this.y += this.speed/2;
          }
 
-        if (keyIsDown(a)) {
+        if (keyIsDown(a) || keyIsDown(LEFT_ARROW)) {
              this.x -= this.speed * 0.75;
          }
 
-        if (keyIsDown(d)) {
+        if (keyIsDown(d) || keyIsDown(RIGHT_ARROW)) {
              this.x += this.speed * 0.75;
          }
     }
@@ -260,16 +258,17 @@ class Bullet {
 function bulletsLogic(obj) {
     key=key.toUpperCase();
 
-    if (key=="C" && keyIsPressed) {
+    if ((key=="C" && keyIsPressed) || (mouseButton == LEFT && mouseIsPressed)) {
         BluePortalBullet = new Bullet(obj, BulletType.BLUE);
         BluePortalBullet.shot();
-    } else if (key=="V" && keyIsPressed) {
+    } else if ((key=="V" && keyIsPressed) || (mouseButton == RIGHT && mouseIsPressed)) {
         YellowPortalBullet = new Bullet(obj, BulletType.YELLOW);
         YellowPortalBullet.shot();
     }
 
     // Remove key = "" for a cool effect
-    key = ""
+    key = "";
+    mouseButton = "";
 
     if (bulletsArr != null) {
         for (i = 0; i < bulletsArr.length; i++) {
