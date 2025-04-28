@@ -1,14 +1,10 @@
-/* eslint-env es6 */
-/* eslint-disable */
-
-// Re-do platform creation
 // Re-do jump function
 
-var canvas = null;
-var currentScreen = 0;
-var totalScreens = 1;
-var Hero;
-var Gun;
+var canvas;
+var currentScreen = [0, 0];
+var availScreens = [];
+var hero;
+var gun;
 var BluePortalBullet;
 var YellowPortalBullet;
 var bulletsArr = [];
@@ -18,29 +14,27 @@ var initializeJump = false;
 var gravityVal = 6;
 var onPlatform = false;
 var jumping = false;
-var platsByScr = [];
 var creatures = [];
-var platsMap = new Map();
 var creaturesMap = new Map();
 
 function setup() {
     canvas = createCanvas(1400,600);
-    Hero = new hero();
-    Gun = new gun(Hero);
+    hero = new Hero();
+    gun = new Gun(Hero);
+    GameWorld = new World();
     setPlatformData();
-    createPlatforms();
     // setCreatureData();
     // createCreatures();
 }
 
 function draw() {
     background(150,150,150);
-    whichScreen();
+    checkAvailScreens();
     displayPlatforms();
-    bulletsLogic();
-    movementLogic(Hero,currentScreen);
-    Gun.display(Hero,theta);
-    Hero.display();
+    bulletsLogic(hero);
+    movementLogic(hero);
+    gun.display(hero, theta);
+    hero.display();
 }
 
 const BulletType = {
@@ -52,7 +46,15 @@ const EntityType = {
     HERO: "HERO"
 }
 
-class hero {
+const BoundsDir = {
+    NORTH: "NORTH",
+    SOUTH: "SOUTH",
+    EAST: "EAST",
+    WEST: "WEST",
+    ANY: "ANY"
+}
+
+class Hero {
     constructor() {
         this.x=400;
         this.y=500;
@@ -65,6 +67,21 @@ class hero {
     display() {
         fill(200,150,100);
         circle(this.x,this.y,this.diameter);
+    }
+
+    scrWrap() {
+        var dir = offScreenCheck(this);
+        var offset = this.radius;
+
+        if (dir == BoundsDir.NORTH) {
+            this.y = canvas.height - offset;
+        } else if (dir == BoundsDir.SOUTH) {
+            this.y = 0 + offset;
+        } else if (dir == BoundsDir.EAST) {
+            this.x = 0 + offset;
+        } else if (dir == BoundsDir.WEST) {
+            this.x = canvas.width - offset;
+        }
     }
     
     jump() {
@@ -110,7 +127,7 @@ class hero {
     }
 }
 
-class gun {
+class Gun {
     constructor(obj) {
         this.width=10;
         this.length=26;
@@ -198,7 +215,7 @@ class gun {
     }
 }
 
-class bullet {
+class Bullet {
     constructor(obj, type) {
         this.x=obj.x;
         this.y=obj.y;
@@ -240,14 +257,14 @@ class bullet {
     }
 }
 
-function bulletsLogic() {
+function bulletsLogic(obj) {
     key=key.toUpperCase();
 
     if (key=="C" && keyIsPressed) {
-        BluePortalBullet = new bullet(Hero, BulletType.BLUE);
+        BluePortalBullet = new Bullet(obj, BulletType.BLUE);
         BluePortalBullet.shot();
     } else if (key=="V" && keyIsPressed) {
-        YellowPortalBullet = new bullet(Hero, BulletType.YELLOW);
+        YellowPortalBullet = new Bullet(obj, BulletType.YELLOW);
         YellowPortalBullet.shot();
     }
 
@@ -269,20 +286,32 @@ function bulletsLogic() {
     }
 }
 
-class platform {
-    constructor(screenNum,platformNum) {
-        screenNum.toString;
-        platformNum.toString;
-        
-        this.x=platsMap.get("s"+screenNum+"p"+platformNum+".x");
-        this.y=platsMap.get("s"+screenNum+"p"+platformNum+".y");
-        this.width=platsMap.get("s"+screenNum+"p"+platformNum+".w");
-        this.height=platsMap.get("s"+screenNum+"p"+platformNum+".h");
-        
-        this.x=parseInt(this.x);
-        this.y=parseInt(this.y);
-        this.width=parseInt(this.width);
-        this.height=parseInt(this.height);
+class World {
+    constructor() {
+        this.screens = {};
+    }
+}
+
+class Screen {
+    constructor(coords) {
+        this.platforms = new Map();
+        this.coords = coords;
+
+        GameWorld.screens[this.coords] = this.platforms;
+    }
+}
+
+class Platform {
+    constructor(screen,x,y,width,height) {
+        this.screen = screen.ID;
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+
+        this.platID = screen.platforms.size;
+
+        screen.platforms.set(this.platID, this);
     }
     
     display() {
@@ -291,91 +320,117 @@ class platform {
 }
 
 function setPlatformData() {
-    function setPlatform(screenNum,platNum,xVar,yVar,wVar,hVar) {
-        platsMap.set("s"+screenNum+"p"+platNum+".x",xVar);
-        platsMap.set("s"+screenNum+"p"+platNum+".y",yVar);
-        platsMap.set("s"+screenNum+"p"+platNum+".w",wVar);
-        platsMap.set("s"+screenNum+"p"+platNum+".h",hVar);
-    }
+    // Screen [0, 0]
+    screen = new Screen([0, 0]);
+
+    // Platform 0
+    new Platform(screen,0,500,width,25);
+
+    // Platform 1
+    new Platform(screen,250,250,30,30);
+
+    // Platform 2
+    new Platform(screen,500,400,80,50);
     
-    // Screen 1
+    // Screen [1, 0]
+    screen = new Screen([1, 0]);
 
-        // Platform 1
-        setPlatform(1,1,0,500,width,25);
+    // Platform 0
+    new Platform(screen,0,500,width,25);
 
-        // Platform 2
-        setPlatform(1,2,250,250,120,15);
+    // Platform 1
+    new Platform(screen,250,250,120,15);
 
-        // Platform 3
-        setPlatform(1,3,500,400,80,15);
+    // Platform 2
+    new Platform(screen,500,400,80,15);
 
-        // Platform 4
-        setPlatform(1,4,730,200,150,15);
+    // Platform 3
+    new Platform(screen,730,200,150,15);
 
-        // Platform 5
-        setPlatform(1,5,1100,300,20,200);
-    
-        // Platform 6
-        setPlatform(1,6,1250,400,80,10);
-    
-    // Screen 2
+    // Platform 4
+    new Platform(screen,1100,300,20,200);
 
-        // Platform 1
-        setPlatform(2,1,0,500,width,25);
+    // Platform 5
+    new Platform(screen,1250,400,80,10);
 
-        // Platform 2
-        setPlatform(2,2,250,250,30,30);
+    // Screen [0, 1]
+    screen = new Screen([0, 1]);
 
-        // Platform 3
-        setPlatform(2,3,500,400,80,50);        
-}
-
-function createPlatforms() {
-    for (let s=0;s < totalScreens;s++) {
-        platsByScr[s] = []
-        
-        for (let i=0;i < platsMap.size/4; i++) {
-            platsByScr[s].push(new platform(s+1,i+1));
-        }
-    }
+    // Platform 0
+    new Platform(screen,250,250,80,20);
+         
 }
 
 function displayPlatforms() {
-    s = currentScreen;
+    scr = currentScreen;
 
-    for (let i=0;i < platsByScr[s].length;i++) {
+    for (let i = 0 ; i < GameWorld.screens[scr].size; i++) {
         push();
         noStroke();
         fill(50,50,50);
-        platsByScr[s][i].display();
+        GameWorld.screens[scr].get(i).display()
         pop();
     }
 }
 
-function whichScreen() {
-    if (Hero.x - Hero.radius < 100) {
-        console.log(platsMap);
-        currentScreen = 0
-    } else if (Hero.x + Hero.radius > canvas.width) {
-        currentScreen = 1
-    } else if (Hero.y - Hero.radius < 0) {
-        
-    } else if (Hero.y + Hero.radius > canvas.height) {
-        
+function whichScreen(obj) {
+    dir = offScreenCheck(obj);
+
+    if (dir == BoundsDir.WEST) {
+        currentScreen[0] -= 1;
+    } else if (dir == BoundsDir.EAST) {
+        currentScreen[0] += 1;
+    } else if (dir == BoundsDir.SOUTH) {
+        currentScreen[1] -= 1;
+    } else if (dir == BoundsDir.NORTH) {
+        currentScreen[1] += 1;
     }
 }
 
-function movementLogic(entity,scrNum) {
+function offScreenCheck(obj) {
+    if (obj.x - obj.radius < 0) {
+        return BoundsDir.WEST;
+    } else if (obj.x + obj.radius > canvas.width) {
+        return BoundsDir.EAST;
+    } else if (obj.y - obj.radius < 0) {
+        return BoundsDir.NORTH;
+    } else if (obj.y + obj.radius > canvas.height) {
+        return BoundsDir.SOUTH;
+    }
+    return false;
+}
+
+function checkAvailScreens() {
+    availScreens = [];
+
+    if (GameWorld.screens[[currentScreen[0], currentScreen[1] + 1]] != null) {
+        availScreens.push([currentScreen[0], currentScreen[1] + 1]);
+    }
+    if (GameWorld.screens[[currentScreen[0], currentScreen[1] - 1]] != null) {
+        availScreens.push([currentScreen[0], currentScreen[1] - 1]);
+    }
+    if (GameWorld.screens[[currentScreen[0] + 1, currentScreen[1]]] != null) {
+        availScreens.push([currentScreen[0] + 1, currentScreen[1]]);
+    }
+    if (GameWorld.screens[[currentScreen[0] - 1, currentScreen[1]]] != null) {
+        availScreens.push([currentScreen[0] - 1, currentScreen[1]]);
+    }
+}
+
+function movementLogic(entity) {
     var entdir;
     
     entity.move();
+    whichScreen(entity);
+    entity.scrWrap();
+
     if (onPlatform || jumping) {
         entity.jump();
         onPlatform = false;
         typedFlag = 0;
     }
     gravity(entity);
-    entDir = stoppedByPlatform(entity,scrNum);
+    entDir = stoppedByPlatform(entity);
     
     if (entDir) {
         if (entDir == "down") {
@@ -390,9 +445,11 @@ function gravity(entity) {
     entity.y += gravityVal;
 }
 
-function stoppedByPlatform(entity,scrNum) {
-    for (let i=0;i<=5;i++) {
-        let platform=platsByScr[scrNum][i];
+function stoppedByPlatform(entity) {
+    scr = currentScreen;
+
+    for (i = 0; i < GameWorld.screens[scr].size; i++) {
+        let platform = GameWorld.screens[scr].get(i);
         
         // Directional Conditions
         let betweenYsConst=((entity.y > platform.y) && (entity.y < (platform.y+platform.height)));
