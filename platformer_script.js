@@ -1,4 +1,10 @@
 // Re-do jump function
+// Re-do theta calculation
+//
+//      Bugs
+// 1. Jumping
+// 2. Bullet coming from body not gun looks strange when moving hero but not mouse
+// 3. Bullets not immediately being removed on contact with a platform
 
 var canvas;
 var currentScreen = [0, 0];
@@ -8,7 +14,6 @@ var gun;
 var BluePortalBullet;
 var YellowPortalBullet;
 var bulletsArr = [];
-var theta = 0;
 var jumpTime = 0;
 var initializeJump = false;
 var gravityVal = 6;
@@ -33,7 +38,7 @@ function draw() {
     displayPlatforms();
     bulletsLogic(hero);
     movementLogic(hero);
-    gun.display(hero, theta);
+    gun.display(hero);
     hero.display();
 }
 
@@ -127,16 +132,18 @@ class Hero {
 
 class Gun {
     constructor(obj) {
+        this.theta = 0;
         this.width=10;
         this.length=26;
         this.radius=12;
         this.x=obj.x-(this.width/2);
         this.y=obj.y;
+        this.entType = obj.entType;
     }
     
     display(obj) {
-        let theta=this.calculateTheta(obj);
-        this.rotation(obj,theta);
+        this.calculateTheta(obj);
+        this.rotation(obj);
         fill(0,0,0);
         rect(0-(this.width/2),0,this.width,this.length,this.radius);
         pop();
@@ -145,13 +152,13 @@ class Gun {
         //line(mouseX,mouseY,mouseX,obj.y);
     }
     
-    rotation(obj,theta) {
+    rotation(obj) {
         push();
         translate(obj.x,obj.y);
         rotate(3*PI/2);
-        rotate(theta);
+        rotate(this.theta);
         this.modifyRotation(obj);
-        this.cornerCases(obj,theta);
+        this.cornerCases(obj,this.theta);
     }
     
     calculateTheta(obj) {
@@ -168,15 +175,14 @@ class Gun {
         let hypo=dist(obj.x,obj.y,mouseX,mouseY);
         
         if (Q1) {
-            theta=acos(opp/hypo);
+            this.theta=acos(opp/hypo);
         } else if (Q2) {
-            theta=asin(opp/hypo);
+            this.theta=asin(opp/hypo);
         } else if (Q3) {
-            theta=acos(opp/hypo);
+            this.theta=acos(opp/hypo);
         } else if (Q4) {
-            theta=asin(opp/hypo);
+            this.theta=asin(opp/hypo);
         }
-        return theta;
     }
     
     modifyRotation(obj) {
@@ -219,7 +225,7 @@ class Bullet {
         this.y=obj.y;
         this.diameter=12;
         this.radius = this.diameter / 2;
-        this.speed=18;
+        this.speed=10;
         this.casterType=obj.entType
         this.type=type;
 
