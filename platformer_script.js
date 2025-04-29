@@ -258,6 +258,7 @@ class Bullet {
 function bulletsLogic(obj) {
     key=key.toUpperCase();
 
+    // Bullet Creation
     if ((key=="C" && keyIsPressed) || (mouseButton == LEFT && mouseIsPressed)) {
         BluePortalBullet = new Bullet(obj, BulletType.BLUE);
         BluePortalBullet.shot();
@@ -270,16 +271,31 @@ function bulletsLogic(obj) {
     key = "";
     mouseButton = "";
 
-    if (bulletsArr != null) {
+
+    // Remove bullet if offscreen
+    if (bulletsArr.length > 0) {
         for (i = 0; i < bulletsArr.length; i++) {
             bulletsArr[i].move();
             bulletsArr[i].display();
             
-
             if (bulletsArr[i].x - bulletsArr[i].radius < 0 || bulletsArr[i].x + bulletsArr[i].radius > canvas.width) {
                 bulletsArr.splice(i, 1);
             } else if (bulletsArr[i].y - bulletsArr[i].radius < 0 || bulletsArr[i].y + bulletsArr[i].radius > canvas.height) {
                 bulletsArr.splice(i, 1);
+            }
+        }
+    }
+
+    // Remove bullet if stopped by a platform
+    if (bulletsArr.length > 0) {
+        scr = currentScreen;
+
+        for (i = 0; i < bulletsArr.length; i++) {
+            for (j = 0; j < GameWorld.screens[scr].size; j++) {
+                if (objPlatOverlap(bulletsArr[i], GameWorld.screens[scr].get(j))) {
+                    bulletsArr.splice(i, 1);
+                    break;
+                }
             }
         }
     }
@@ -302,7 +318,7 @@ class Screen {
 
 class Platform {
     constructor(screen,x,y,width,height) {
-        this.screen = screen.ID;
+        this.screen = screen.coords;
         this.x = x;
         this.y = y;
         this.width = width;
@@ -370,6 +386,46 @@ function displayPlatforms() {
         GameWorld.screens[scr].get(i).display()
         pop();
     }
+}
+
+function objPlatOverlap(entity, platform) {
+    // Directional Conditions
+    let betweenYsConst=((entity.y > platform.y) && (entity.y < (platform.y+platform.height)));
+    let betweenXsConst=((entity.x > platform.x) && (entity.x < (platform.x+platform.width)));
+    let radius=entity.radius;
+    
+    let fromLeft=(((entity.x + radius) >= platform.x) && (entity.x <= (platform.x + radius))) && betweenYsConst;
+    let fromRight=(((entity.x - radius) <= (platform.x + platform.width)) && (entity.x >= (platform.x + platform.width - radius))) && betweenYsConst;
+    let fromAbove=((((entity.y + radius) > platform.y)) && (entity.y < (platform.y + radius))) && betweenXsConst;
+    let fromBelow=((((entity.y - radius) < platform.y + platform.height)) && (entity.y > (platform.y + platform.height - radius))) && betweenXsConst;
+    
+    if (fromLeft) {
+        return true;
+    } else if (fromRight) {
+        return true;
+    } else if (fromAbove) {
+        return true;
+    } else if (fromBelow) {
+        return true;
+    }
+    return false;
+}
+
+function objOverlap(objOne, objTwo) {
+    if (objOne.x + objOne.radius > objTwo.x - objTwo.radius) {
+        if (objOne.y - objOne.radius < objTwo.y + objTwo.radius) {
+            return true;
+        } else if (objOne.y + objOne.radius > objTwo.y - objTwo.radius) {
+            return true;
+        }
+    } else if (objOne.x - objOne.radius < objTwo.x + objTwo.radius) {
+        if (objOne.y - objOne.radius < objTwo.y + objTwo.radius) {
+            return true;
+        } else if (objOne.y + objOne.radius > objTwo.y - objTwo.radius) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function whichScreen(obj) {
